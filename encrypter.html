@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hash Encryptor</title>
+  <style>
+    body { font-family: sans-serif; background: #eef; padding: 20px; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #bbb; }
+    input, textarea, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; }
+    .hash-output { background: #f0f0f0; padding: 10px; margin: 5px 0; word-break: break-all; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 Hash Encryptor</h2>
+    <label>Text to Encrypt:</label>
+    <input type="text" id="textInput" placeholder="Enter your text..." />
+    <button onclick="encrypt()">Encrypt</button>
+
+    <div id="results"></div>
+  </div>
+
+  <script>
+    async function hashText(text, algo) {
+      const buffer = new TextEncoder().encode(text);
+      const digest = await crypto.subtle.digest(algo, buffer);
+      return Array.from(new Uint8Array(digest)).map(x => x.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function encrypt() {
+      const text = document.getElementById("textInput").value;
+      const results = document.getElementById("results");
+      if (!text) return results.innerHTML = "Enter some text.";
+
+      results.innerHTML = "Encrypting...";
+
+      const types = ['MD5', 'SHA-1', 'SHA-256', 'SHA-512'];
+      const hashes = {};
+
+      for (let type of types) {
+        let algo = type;
+        if (type === 'MD5') algo = 'MD5'; // not directly supported in crypto.subtle
+        try {
+          hashes[type] = await hashText(text, type);
+        } catch {
+          hashes[type] = "Unsupported in browser.";
+        }
+      }
+
+      results.innerHTML = Object.entries(hashes).map(([type, hash]) =>
+        `<div class='hash-output'><b>${type}:</b> ${hash}</div>`
+      ).join('');
+    }
+  </script>
+</body>
+</html>

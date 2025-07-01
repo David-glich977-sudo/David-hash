@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hash Decrypter</title>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    input, select, textarea, button { width: 100%; margin: 10px 0; padding: 10px; border-radius: 5px; }
+    textarea { height: 100px; }
+    .result { font-weight: bold; color: green; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🔓 Hash Decrypter (MD5, SHA-1, SHA-256, SHA-512)</h2>
+    <label>Hash to Decrypt:</label>
+    <input type="text" id="targetHash" placeholder="Paste your hash here" />
+
+    <label>Hash Type:</label>
+    <select id="hashType">
+      <option value="MD5">MD5</option>
+      <option value="SHA-1">SHA-1</option>
+      <option value="SHA-256">SHA-256</option>
+      <option value="SHA-512">SHA-512</option>
+    </select>
+
+    <label>Upload Wordlist (.txt):</label>
+    <input type="file" id="wordlistFile" accept=".txt" />
+
+    <button onclick="crackHash()">Crack Hash</button>
+
+    <div id="output" class="result"></div>
+  </div>
+
+  <script>
+    async function hashString(str, type) {
+      const enc = new TextEncoder();
+      const buffer = enc.encode(str);
+      const digest = await crypto.subtle.digest(type, buffer);
+      return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function crackHash() {
+      const file = document.getElementById('wordlistFile').files[0];
+      const hashType = document.getElementById('hashType').value;
+      const target = document.getElementById('targetHash').value.trim().toLowerCase();
+      const output = document.getElementById('output');
+      output.textContent = "Cracking... Please wait.";
+
+      if (!file || !target) {
+        output.textContent = "Please provide both a hash and a wordlist.";
+        return;
+      }
+
+      const algoMap = {
+        'MD5': 'MD5',
+        'SHA-1': 'SHA-1',
+        'SHA-256': 'SHA-256',
+        'SHA-512': 'SHA-512'
+      };
+
+      const reader = new FileReader();
+      reader.onload = async function() {
+        const lines = reader.result.split(/\r?\n/);
+        for (const word of lines) {
+          const hashed = await hashString(word, algoMap[hashType]);
+          if (hashed === target) {
+            output.textContent = `✅ Found: "${word}"`;
+            return;
+          }
+        }
+        output.textContent = "❌ No match found.";
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
